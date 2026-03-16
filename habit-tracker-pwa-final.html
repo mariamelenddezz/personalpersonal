@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hábitos">
+<meta name="theme-color" content="#1a1a1a">
+<title>Tracker de Hábitos</title>
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiVHJhY2tlciBkZSBIw6FiaXRvcyIsInNob3J0X25hbWUiOiJIw6FiaXRvcyIsInN0YXJ0X3VybCI6Ii4iLCJkaXNwbGF5Ijoic3RhbmRhbG9uZSIsImJhY2tncm91bmRfY29sb3IiOiIjZmFmOGYzIiwidGhlbWVfY29sb3IiOiIjMWExYTFhIn0=">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --paper: #faf8f3;
+    --paper2: #f2efe6;
+    --accent: #c8502a;
+    --accent2: #2a6b5a;
+    --line: #d4cfc2;
+    --soft: #e8e3d8;
+    --muted: #8a857a;
+    --done: #2a6b5a;
+    --safe-area-top: env(safe-area-inset-top, 0px);
+    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html {
+    height: 100%;
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
+  }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    padding-top: var(--safe-area-top);
+    padding-bottom: var(--safe-area-bottom);
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: none;
+  }
+
+  /* ── HEADER ── */
+  .screen-header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+  .screen-header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1rem;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .header-controls { display: flex; gap: 6px; align-items: center; }
+  .nav-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.25);
+    color: var(--paper);
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    min-width: 40px;
+    touch-action: manipulation;
+    transition: all 0.15s;
+  }
+  .nav-btn:active { background: rgba(255,255,255,0.2); transform: scale(0.95); }
+  .nav-btn.accent { background: var(--accent); border-color: var(--accent); font-weight: 500; }
+  .month-label {
+    font-family: 'DM Serif Display', serif;
+    font-size: 0.9rem;
+    color: var(--paper);
+    padding: 0 4px;
+    min-width: 110px;
+    text-align: center;
+  }
+
+  /* ── PAGE ── */
+  .page {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 16px 12px 220px;
+  }
+  @media (min-width: 768px) {
+    .page { max-width: 800px; padding: 24px 24px 220px; }
+  }
+
+  .month-title {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .month-title h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.2rem;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+  }
+  .month-title .year-tag {
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* ── OBJETIVOS ── */
+  .objectives-section {
+    margin-bottom: 20px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .objectives-header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 12px 14px;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .objectives-list {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: var(--paper2);
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  .objective-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    background: var(--paper);
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    touch-action: pan-y;
+  }
+  .obj-number { font-size: 0.65rem; font-weight: 500; color: var(--muted); min-width: 20px; }
+  .obj-color-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .obj-name {
+    flex: 1;
+    font-size: 0.9rem;
+    font-family: 'DM Mono', monospace;
+    border: none;
+    background: transparent;
+    outline: none;
+    color: var(--ink);
+    min-width: 60px;
+    padding: 4px;
+    border-radius: 4px;
+  }
+  .obj-name:focus { background: var(--soft); }
+  .obj-name::placeholder { color: var(--line); }
+  .obj-days { display: flex; gap: 2px; flex-shrink: 0; }
+  .day-toggle {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    background: var(--paper2);
+    font-size: 0.65rem;
+    font-family: 'DM Mono', monospace;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--muted);
+    padding: 0;
+    transition: all 0.12s;
+    touch-action: manipulation;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .day-toggle:active { transform: scale(0.9); }
+  .day-toggle.active { color: white; border-color: transparent; font-weight: 700; }
+  .remove-obj {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--line);
+    font-size: 1.3rem;
+    padding: 4px 8px;
+    line-height: 1;
+    touch-action: manipulation;
+  }
+  .remove-obj:active { color: var(--accent); }
+  .add-obj-btn {
+    margin: 10px;
+    background: transparent;
+    border: 1.5px dashed var(--line);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: calc(100% - 20px);
+    touch-action: manipulation;
+  }
+  .add-obj-btn:active { border-color: var(--ink); color: var(--ink); background: var(--soft); }
+
+  /* ── CALENDARIO ── */
+  .calendar-wrapper {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .cal-grid {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  .cal-grid thead th {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 10px 2px;
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+    border-right: 1px solid rgba(255,255,255,0.08);
+    width: 14.28%;
+  }
+  .cal-grid thead th:last-child { border-right: none; }
+  .cal-grid thead th.weekend-head { color: #8ad0c0; }
+
+  .day-cell {
+    border: 1px solid var(--line);
+    vertical-align: top;
+    padding: 0;
+    height: 90px;
+    background: var(--paper);
+  }
+  .day-cell.empty-cell { background: var(--paper2); opacity: 0.4; }
+  .day-cell.today-cell { background: #fff8f5; }
+  .day-cell.weekend-cell { background: #f6faf8; }
+
+  .day-num-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 4px 5px;
+    border-bottom: 1px solid var(--soft);
+    height: 24px;
+  }
+  .day-num { font-size: 0.75rem; font-weight: 500; color: var(--muted); }
+  .day-num.today-num {
+    background: var(--accent);
+    color: white;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 700;
+  }
+  .day-num.weekend-num { color: var(--accent2); }
+
+  .day-habits {
+    padding: 3px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+    max-height: 66px;
+  }
+  .habit-chip {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 3px 4px;
+    transition: all 0.1s;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    min-height: 22px;
+  }
+  .habit-chip:active { background: var(--soft); transform: scale(0.98); }
+  .habit-check {
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    border: 1.5px solid var(--line);
+    background: white;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem;
+    color: transparent;
+    transition: all 0.12s;
+    font-weight: bold;
+  }
+  .habit-chip.done .habit-check { color: white; border-color: transparent; }
+  .habit-dot { width: 4px; height: 4px; border-radius: 50%; flex-shrink: 0; }
+  .habit-chip-label {
+    font-size: 0.6rem;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+  }
+  .habit-chip.done .habit-chip-label { color: var(--ink); font-weight: 500; }
+
+  /* ── PROGRESS (fijo abajo) ── */
+  .progress-container {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(250, 248, 243, 0.97);
+    border-top: 1px solid var(--line);
+    padding: 12px 16px calc(12px + var(--safe-area-bottom));
+    z-index: 90;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  .progress-header {
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .progress-overall {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .progress-row {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    max-height: 130px;
+    overflow-y: auto;
+  }
+  .progress-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .progress-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .progress-label {
+    font-size: 0.75rem;
+    color: var(--ink);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .progress-bar-wrap { width: 60px; height: 4px; background: var(--soft); border-radius: 2px; overflow: hidden; flex-shrink: 0; }
+  .progress-bar-fill { height: 100%; border-radius: 2px; transition: width 0.35s; }
+  .progress-pct { font-size: 0.7rem; font-weight: 600; min-width: 34px; text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* ── SWIPE INDICATOR ── */
+  .swipe-hint {
+    text-align: center;
+    font-size: 0.6rem;
+    color: var(--line);
+    letter-spacing: 0.06em;
+    margin-top: 14px;
+    padding-bottom: 4px;
+  }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: calc(var(--safe-area-bottom) + 175px);
+    left: 50%;
+    transform: translateX(-50%) translateY(12px);
+    background: var(--ink);
+    color: var(--paper);
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-family: 'DM Mono', monospace;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 200;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── SAVE INDICATOR ── */
+  .save-indicator {
+    position: fixed;
+    top: calc(var(--safe-area-top) + 58px);
+    right: 16px;
+    background: var(--accent2);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: all 0.25s;
+    pointer-events: none;
+    z-index: 200;
+    font-weight: 500;
+  }
+  .save-indicator.show { opacity: 1; transform: translateY(0); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-content {
+    background: var(--paper);
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 300px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .modal-title { font-family: 'DM Serif Display', serif; font-size: 1.3rem; margin-bottom: 10px; }
+  .modal-text { font-size: 0.85rem; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+  .modal-buttons { display: flex; gap: 10px; }
+  .modal-btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: all 0.15s;
+  }
+  .modal-btn:active { transform: scale(0.95); opacity: 0.8; }
+  .modal-btn.cancel { background: var(--soft); color: var(--ink); }
+  .modal-btn.confirm { background: var(--accent); color: white; font-weight: 500; }
+
+  /* ── SLIDE ANIMATION ── */
+  @keyframes slideInRight { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes slideInLeft  { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+  .slide-right { animation: slideInRight 0.22s ease; }
+  .slide-left  { animation: slideInLeft  0.22s ease; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 375px) {
+    .day-cell { height: 80px; }
+    .day-toggle { width: 24px; height: 24px; font-size: 0.6rem; }
+    .month-title h2 { font-size: 1.8rem; }
+  }
+  @media (min-width: 768px) {
+    .day-cell { height: 110px; }
+    .progress-row { flex-direction: row; flex-wrap: wrap; }
+    .progress-item { min-width: 200px; }
+  }
+
+  @media print {
+    .screen-header, .progress-container, .save-indicator, .toast, .modal-overlay, .swipe-hint { display: none !important; }
+    .page { padding: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="save-indicator" id="save-indicator">💾 Guardado</div>
+
+<div class="screen-header">
+  <h1>📅 Hábitos</h1>
+  <div class="header-controls">
+    <button class="nav-btn" onclick="prevMonth()">◀</button>
+    <span class="month-label" id="header-month-label"></span>
+    <button class="nav-btn" onclick="nextMonth()">▶</button>
+    <button class="nav-btn" onclick="exportData()" title="Exportar backup">⬆</button>
+    <button class="nav-btn" onclick="importData()" title="Importar backup">⬇</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="month-title">
+    <h2 id="month-display"></h2>
+    <div class="year-tag" id="year-display"></div>
+  </div>
+
+  <div class="objectives-section">
+    <div class="objectives-header">
+      <span>Mis Hábitos</span>
+      <span style="font-size:0.6rem;opacity:0.6">toca días activos</span>
+    </div>
+    <div class="objectives-list" id="objectives-list"></div>
+    <button class="add-obj-btn" onclick="addObjective()">＋ Nuevo hábito</button>
+  </div>
+
+  <div class="calendar-wrapper">
+    <table class="cal-grid" id="calendar-table"></table>
+  </div>
+
+  <div class="swipe-hint">← desliza para cambiar de mes →</div>
+</div>
+
+<div class="progress-container">
+  <div class="progress-header">
+    <span>Progreso del mes</span>
+    <span class="progress-overall" id="overall-progress"></span>
+  </div>
+  <div class="progress-row" id="progress-row"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal-content">
+    <div class="modal-title" id="modal-title"></div>
+    <div class="modal-text" id="modal-text"></div>
+    <div class="modal-buttons">
+      <button class="modal-btn cancel" onclick="closeModal()">Cancelar</button>
+      <button class="modal-btn confirm" id="modal-confirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const PALETTE = ['#c8502a','#2a6b5a','#4a5fa8','#a05ca0','#c89428','#2a8a9a','#8a4030','#3a7a3a','#5a2a8a','#c05080','#6a8a28','#2a5a80'];
+  const DAY_LABELS = ['L','M','X','J','V','S','D'];
+  const DAY_NAMES_SHORT = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  const DAY_NAMES_LONG = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const STORAGE_KEY = 'habit_tracker_data_v2';
+
+  let currentYear = new Date().getFullYear();
+  let currentMonth = new Date().getMonth();
+  const today = new Date();
+  let saveTimeout = null;
+  let slideDir = null;
+  let deleteCallback = null;
+
+  // ── ESTADO ──
+  let objectives = [
+    { id: 1, name: 'Ejercicio', days: [1,2,3,4,5], color: PALETTE[0] },
+    { id: 2, name: 'Leer', days: [0,1,2,3,4,5,6], color: PALETTE[1] },
+    { id: 3, name: 'Meditar', days: [0,1,2,3,4,5,6], color: PALETTE[2] },
+  ];
+  let nextId = 4;
+  let checks = {};
+
+  // ── PERSISTENCIA ──
+  function loadData() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (data.objectives) objectives = data.objectives;
+        if (data.nextId) nextId = data.nextId;
+        if (data.checks) checks = data.checks;
+      }
+    } catch(e) { console.error('Error cargando:', e); }
+  }
+
+  function saveData() {
+    if (saveTimeout) clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(() => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ objectives, nextId, checks, savedAt: new Date().toISOString() }));
+        showSaveIndicator();
+      } catch(e) {
+        alert('Error al guardar. Espacio lleno.');
+      }
+    }, 300);
+  }
+
+  function showSaveIndicator() {
+    const el = document.getElementById('save-indicator');
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 1400);
+  }
+
+  // ── TOAST ──
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 1600);
+  }
+
+  // ── MODAL ──
+  function showModal(title, text, confirmLabel, onConfirm) {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-text').textContent = text;
+    document.getElementById('modal-confirm').textContent = confirmLabel;
+    document.getElementById('modal').classList.add('show');
+    deleteCallback = onConfirm;
+    document.getElementById('modal-confirm').onclick = () => { closeModal(); if (deleteCallback) deleteCallback(); };
+  }
+  function closeModal() {
+    document.getElementById('modal').classList.remove('show');
+    deleteCallback = null;
+  }
+
+  // ── HELPERS ──
+  function monthKey() { return currentYear + '_' + currentMonth; }
+  function getCheck(objId, day) { return checks[monthKey()]?.[objId]?.[day] || null; }
+  function setCheck(objId, day, val) {
+    const mk = monthKey();
+    if (!checks[mk]) checks[mk] = {};
+    if (!checks[mk][objId]) checks[mk][objId] = {};
+    checks[mk][objId][day] = val;
+    saveData();
+  }
+  function daysInMonth(y, m) { return new Date(y, m+1, 0).getDate(); }
+  function firstDayOfMonth(y, m) { const d = new Date(y, m, 1).getDay(); return d === 0 ? 6 : d-1; }
+  function escHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  // ── NAVEGACIÓN ──
+  function prevMonth() { slideDir='left';  currentMonth--; if(currentMonth<0){currentMonth=11;currentYear--;} render(); }
+  function nextMonth() { slideDir='right'; currentMonth++; if(currentMonth>11){currentMonth=0;currentYear++;} render(); }
+
+  // ── SWIPE ──
+  let txStart = 0, tyStart = 0;
+  document.addEventListener('touchstart', e => { txStart = e.touches[0].clientX; tyStart = e.touches[0].clientY; }, { passive: true });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - txStart;
+    const dy = e.changedTouches[0].clientY - tyStart;
+    if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.6) {
+      if (dx < 0) nextMonth(); else prevMonth();
+    }
+  }, { passive: true });
+
+  // ── OBJETIVOS ──
+  function addObjective() {
+    objectives.push({ id: nextId++, name: '', days: [0,1,2,3,4,5,6], color: PALETTE[objectives.length % PALETTE.length] });
+    saveData();
+    render();
+    setTimeout(() => { const inputs = document.querySelectorAll('.obj-name'); if(inputs.length) inputs[inputs.length-1].focus(); }, 60);
+  }
+
+  function removeObjective(id) {
+    const obj = objectives.find(o => o.id === id);
+    showModal('¿Eliminar hábito?', 'Se borrará "' + (obj?.name || 'este hábito') + '" y todo su historial.', 'Eliminar', () => {
+      objectives = objectives.filter(o => o.id !== id);
+      saveData();
+      render();
+      showToast('Hábito eliminado');
+    });
+  }
+
+  function toggleDay(objId, dayIdx) {
+    const obj = objectives.find(o => o.id === objId);
+    if (!obj) return;
+    const i = obj.days.indexOf(dayIdx);
+    if (i >= 0) obj.days.splice(i, 1); else obj.days.push(dayIdx);
+    saveData();
+    renderCalendar();
+    renderProgress();
+  }
+
+  function updateName(objId, val) {
+    const obj = objectives.find(o => o.id === objId);
+    if (obj) { obj.name = val; saveData(); renderCalendar(); renderProgress(); }
+  }
+
+  function cycleCheck(objId, day) {
+    const cur = getCheck(objId, day);
+    const newVal = cur === 'done' ? null : 'done';
+    setCheck(objId, day, newVal);
+    if (newVal === 'done') {
+      const obj = objectives.find(o => o.id === objId);
+      showToast('✓ ' + (obj?.name || 'Hábito'));
+    }
+    renderCalendar();
+    renderProgress();
+  }
+
+  // ── EXPORT / IMPORT ──
+  function exportData() {
+    const data = { objectives, nextId, checks, exportedAt: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'habitos-backup-' + new Date().toISOString().split('T')[0] + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('📦 Backup exportado');
+  }
+
+  function importData() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          if (data.objectives && data.checks) {
+            showModal('Restaurar backup', 'Esto reemplazará todos tus datos actuales. ¿Continuar?', 'Restaurar', () => {
+              objectives = data.objectives;
+              nextId = data.nextId || 4;
+              checks = data.checks;
+              saveData();
+              render();
+              showToast('✓ Datos restaurados');
+            });
+          } else { alert('Archivo inválido'); }
+        } catch { alert('Archivo inválido'); }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  }
+
+  // ── RENDER OBJETIVOS ──
+  function renderObjectives() {
+    const list = document.getElementById('objectives-list');
+    list.innerHTML = '';
+    objectives.forEach((obj, idx) => {
+      const row = document.createElement('div');
+      row.className = 'objective-row';
+      row.innerHTML =
+        '<span class="obj-number">' + (idx+1) + '</span>'
+        + '<div class="obj-color-dot" style="background:' + obj.color + '"></div>'
+        + '<input class="obj-name" placeholder="Nombre del hábito..." value="' + escHtml(obj.name) + '" oninput="updateName(' + obj.id + ',this.value)" />'
+        + '<div class="obj-days">'
+        + DAY_LABELS.map((d,di) =>
+            '<button class="day-toggle ' + (obj.days.includes(di)?'active':'') + '" '
+            + 'style="' + (obj.days.includes(di)?'background:'+obj.color+';':'') + '" '
+            + 'onclick="toggleDay(' + obj.id + ',' + di + ')" '
+            + 'title="' + DAY_NAMES_LONG[di] + '">' + d + '</button>'
+          ).join('')
+        + '</div>'
+        + '<button class="remove-obj" onclick="removeObjective(' + obj.id + ')">×</button>';
+      list.appendChild(row);
+    });
+  }
+
+  // ── RENDER CALENDARIO ──
+  function renderCalendar() {
+    const table = document.getElementById('calendar-table');
+    const totalDays = daysInMonth(currentYear, currentMonth);
+    const firstDow = firstDayOfMonth(currentYear, currentMonth);
+    const isThisMonth = today.getFullYear()===currentYear && today.getMonth()===currentMonth;
+
+    let html = '<thead><tr>';
+    for (let i=0; i<7; i++) {
+      html += '<th class="' + (i>=5?'weekend-head':'') + '">' + DAY_NAMES_SHORT[i] + '</th>';
+    }
+    html += '</tr></thead><tbody>';
+
+    const cells = [];
+    for (let i=0; i<firstDow; i++) cells.push(null);
+    for (let d=1; d<=totalDays; d++) cells.push(d);
+    while (cells.length % 7 !== 0) cells.push(null);
+
+    for (let i=0; i<cells.length; i+=7) {
+      html += '<tr>';
+      for (let j=0; j<7; j++) {
+        const d = cells[i+j];
+        if (d === null) {
+          html += '<td class="day-cell empty-cell"></td>';
+        } else {
+          const isToday = isThisMonth && d === today.getDate();
+          const isWE = j >= 5;
+          const dow = (new Date(currentYear, currentMonth, d).getDay() + 6) % 7;
+          const tdCls = 'day-cell' + (isToday?' today-cell':isWE?' weekend-cell':'');
+
+          let numHtml;
+          if (isToday)     numHtml = '<span class="day-num today-num">'   + d + '</span>';
+          else if (isWE)   numHtml = '<span class="day-num weekend-num">'  + d + '</span>';
+          else             numHtml = '<span class="day-num">'              + d + '</span>';
+
+          let habitsHtml = '';
+          const activeObjs = objectives.filter(o => o.days.includes(dow));
+          if (activeObjs.length > 0) {
+            habitsHtml = '<div class="day-habits">';
+            activeObjs.forEach(obj => {
+              const done = getCheck(obj.id, d) === 'done';
+              const checkStyle = done ? 'background:'+obj.color+';border-color:'+obj.color : 'border-color:'+obj.color+'88';
+              const name = escHtml(obj.name || 'Hábito');
+              habitsHtml += '<div class="habit-chip' + (done?' done':'') + '" onclick="cycleCheck(' + obj.id + ',' + d + ')">'
+                + '<div class="habit-check" style="' + checkStyle + '">' + (done?'✓':'') + '</div>'
+                + '<div class="habit-dot" style="background:' + obj.color + '"></div>'
+                + '<span class="habit-chip-label">' + name + '</span>'
+                + '</div>';
+            });
+            habitsHtml += '</div>';
+          }
+
+          html += '<td class="' + tdCls + '"><div class="day-num-bar">' + numHtml + '</div>' + habitsHtml + '</td>';
+        }
+      }
+      html += '</tr>';
+    }
+    html += '</tbody>';
+    table.innerHTML = html;
+
+    // Animación de slide
+    if (slideDir) {
+      table.classList.remove('slide-right','slide-left');
+      void table.offsetWidth; // reflow
+      table.classList.add(slideDir === 'right' ? 'slide-right' : 'slide-left');
+      slideDir = null;
+    }
+  }
+
+  // ── RENDER PROGRESS ──
+  function renderProgress() {
+    const row = document.getElementById('progress-row');
+    if (!objectives.length) {
+      row.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;text-align:center;padding:8px;">Añade hábitos para ver tu progreso</div>';
+      document.getElementById('overall-progress').textContent = '';
+      return;
+    }
+
+    const totalDays = daysInMonth(currentYear, currentMonth);
+    const isThisMonth = today.getFullYear()===currentYear && today.getMonth()===currentMonth;
+    const isPast = currentYear < today.getFullYear() || (currentYear===today.getFullYear() && currentMonth < today.getMonth());
+    const maxDay = isThisMonth ? today.getDate() : (isPast ? totalDays : 0);
+
+    let totalApplicable = 0, totalDone = 0;
+
+    row.innerHTML = objectives.map(obj => {
+      let applicable = 0, done = 0;
+      for (let d=1; d<=maxDay; d++) {
+        const dow = (new Date(currentYear, currentMonth, d).getDay() + 6) % 7;
+        if (obj.days.includes(dow)) { applicable++; if (getCheck(obj.id, d)==='done') done++; }
+      }
+      totalApplicable += applicable;
+      totalDone += done;
+      const pct = applicable > 0 ? Math.round((done/applicable)*100) : 0;
+      return '<div class="progress-item">'
+        + '<div class="progress-dot" style="background:' + obj.color + '"></div>'
+        + '<span class="progress-label">' + escHtml(obj.name||'Hábito') + '</span>'
+        + '<div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:' + pct + '%;background:' + obj.color + '"></div></div>'
+        + '<span class="progress-pct" style="color:' + obj.color + '">' + pct + '%</span>'
+        + '</div>';
+    }).join('');
+
+    const overall = totalApplicable > 0 ? Math.round((totalDone/totalApplicable)*100) : 0;
+    document.getElementById('overall-progress').textContent = overall + '% general';
+  }
+
+  // ── RENDER HEADER ──
+  function renderHeader() {
+    document.getElementById('month-display').textContent = MONTH_NAMES[currentMonth];
+    document.getElementById('year-display').textContent = currentYear;
+    document.getElementById('header-month-label').textContent = MONTH_NAMES[currentMonth] + ' ' + currentYear;
+  }
+
+  function render() {
+    renderHeader();
+    renderObjectives();
+    renderCalendar();
+    renderProgress();
+  }
+
+  // ── INIT ──
+  loadData();
+  render();
+
+  window.addEventListener('beforeunload', () => { if (saveTimeout) clearTimeout(saveTimeout); saveData(); });
+
+  // Prevenir zoom en doble tap (iOS)
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', e => {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) e.preventDefault();
+    lastTouchEnd = now;
+  }, false);
+</script>
+</body>
+</html>
